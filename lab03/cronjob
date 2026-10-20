@@ -1,0 +1,7 @@
+SHELL=/bin/sh
+PATH=/usr/local/bin:/usr/bin:/bin
+MAILTO=""
+# Ежедневно в 06:00, за вчера.
+0 6 * * * /usr/local/bin/python -u /app/lab03/run_scheduled.py daily >> /var/log/cron.log 2>&1
+# По пятницам в 17:00, за прошлую календарную неделю.
+0 17 * * 5 /usr/local/bin/python -u /app/lab03/run_scheduled.py weekly >> /var/log/cron.log 2>&1

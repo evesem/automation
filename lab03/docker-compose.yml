@@ -1,0 +1,22 @@
+services:
+  scheduler:
+    build: .
+    environment:
+      API_KEY: ${API_KEY:-EXAMPLE_API_KEY}
+      API_URL: http://api/
+    volumes:
+      - exchange-data:/app/data
+      - cron-logs:/var/log
+    depends_on:
+      - api
+    restart: unless-stopped
+  api:
+    image: php:8.3-apache
+    environment:
+      API_KEY: ${API_KEY:-EXAMPLE_API_KEY}
+    volumes:
+      - ./service/app:/var/www/html:ro
+    restart: unless-stopped
+volumes:
+  exchange-data:
+  cron-logs:
