@@ -1,28 +1,70 @@
-# IW04: Jenkins и PHP CI
+# IW04: Настройка Jenkins для автоматизации задач DevOps
 
-## Описание проекта
+## 1. Описание проекта
 
-Небольшой PHP-проект «Калькулятор» с модульными тестами PHPUnit. Jenkins запускает Composer и тесты на SSH-агенте с PHP CLI и Composer.
+Для демонстрации CI создан учебный PHP-проект «Калькулятор». Класс `src/Calculator.php` реализует сложение, вычитание, умножение и деление. В `tests/CalculatorTest.php` находятся пять модульных тестов PHPUnit, включая проверку деления на ноль. Зависимости и тестовая команда описаны в `composer.json`, настройки PHPUnit — в `phpunit.xml`.
 
-## Состав
+Jenkins Controller и SSH-агент запускаются с помощью Docker Compose. На агенте установлены PHP CLI, Composer и расширения PHP, необходимые PHPUnit. Pipeline хранится в `Jenkinsfile` и запускается на узле с меткой `php-agent`.
 
-- `src/Calculator.php` — операции сложения, вычитания, умножения и деления.
-- `tests/CalculatorTest.php` — пять PHPUnit-тестов, включая проверку деления на ноль.
-- `composer.json`, `phpunit.xml` — зависимости и конфигурация тестирования.
-- `Jenkinsfile` — CI-конвейер.
-- `docker-compose.yml`, `Dockerfile` — Jenkins Controller и PHP SSH-агент.
+**Результат:** PHPUnit 10 выполнил 5 тестов и 5 assertions на PHP 8.4.27; сборка завершилась успешно (`Finished: SUCCESS`).
 
-## Запуск PHP-проекта локально
+## 2. Настройка Jenkins Controller
 
-Нужны PHP 8.1+ и Composer. Из каталога `lab04` выполнить:
+1. Установить Docker Desktop и проверить, что Docker Engine запущен.
+2. Из каталога `lab04` выполнить `docker compose up -d --build`.
+3. Открыть `http://localhost:8080`, получить начальный пароль командой `docker exec jenkins-controller cat /var/jenkins_home/secrets/initialAdminPassword`, завершить мастер настройки и создать администратора Jenkins.
+4. Установить рекомендуемые плагины и **SSH Build Agents**.
 
-```sh
-composer install
-composer test
-```
+## 3. Настройка SSH-агента
 
-## Подключение Jenkins
+1. Создать пару ключей для агента и локальный `.env` с публичным ключом в `JENKINS_AGENT_SSH_PUBKEY`. `.env` и `secrets/` исключены из Git; закрытый ключ хранится локально.
+2. Запустить оба сервиса командой `docker compose up -d --build` и проверить их состояние через `docker compose ps`.
+3. В Jenkins добавить Credentials типа **SSH Username with private key**. Пользователь — `jenkins`, приватный ключ должен соответствовать публичному ключу, переданному контейнеру агента.
+4. Создать постоянный узел `ssh-agent1`: Remote root directory `/home/jenkins/agent`, метка `php-agent`, способ запуска **Launch agents via SSH**, Host `ssh-agent`, созданные Credentials. Подтвердить host key агента и проверить статус **Online**.
 
-Создать Pipeline job типа **Pipeline script from SCM**, подключить репозиторий `https://github.com/evesem/automation.git`, ветку `main`, Script Path `lab04/Jenkinsfile`. На настроенном SSH-агенте должна быть метка `php-agent`. Pipeline устанавливает зависимости в `lab04` и запускает PHPUnit.
+## 4. Создание и настройка Pipeline
 
-Порядок запуска Controller и SSH-агента описан в `docker-compose.yml`, `Dockerfile` и `.env.example`. Перед запуском скопировать `.env.example` в `.env` и подставить публичный SSH-ключ. Закрытый SSH-ключ и настоящий `.env` в репозиторий не загружать.
+Создать задание **Pipeline**, выбрать **Pipeline script from SCM**, указать Git-репозиторий `https://github.com/evesem/automation.git`, ветку `*/main` и путь скрипта `lab04/Jenkinsfile`. Pipeline устанавливает зависимости Composer в `lab04` и запускает `composer test --no-interaction` на узле с меткой `php-agent`.
+
+Выполненная сборка завершилась успешно: установлены зависимости PHPUnit, все пять тестов прошли.
+
+## 5. Ответы на вопросы
+
+### Преимущества Jenkins для автоматизации DevOps
+
+Jenkins автоматически запускает сборку и тесты при изменении кода, помогает раньше обнаруживать ошибки, интегрируется с Git и большим количеством инструментов через плагины. Pipeline as Code позволяет хранить настройки конвейера рядом с проектом, а агенты распределяют выполнение задач между разными средами.
+
+### Какие ещё бывают агенты Jenkins?
+
+Помимо SSH-агентов, применяются inbound-агенты, которые сами подключаются к контроллеру, а также временные агенты, создаваемые по требованию. Средой агента могут быть физическая или виртуальная машина, Docker-контейнер или Kubernetes-под.
+
+### Какие проблемы возникли и как они решены?
+
+- Compose сначала не находил `JENKINS_AGENT_SSH_PUBKEY`: файл `.env` был сохранён с BOM. Файл пересохранён в UTF-8 без BOM.
+- Jenkins сначала не разрешал имя `ssh-agent`, потому что агент не был доступен в общей сети Compose. После запуска обоих сервисов в одной сети Controller начал находить его.
+- Jenkins не принимал первоначальный приватный ключ в формате OpenSSH. Создана пара RSA в PEM-формате, соответствующие публичный ключ в `.env` и приватный ключ в Jenkins Credentials.
+- После пересоздания контейнера сменился SSH host key. Для агента настроено доверие к новому ключу.
+- Composer/PHPUnit требовали отсутствующее расширение DOM. В образ агента добавлены `php-xml`, а также `php-mbstring` и `php-curl`; после пересборки агента все тесты прошли.
+
+## Безопасность
+
+Не загружать в GitHub настоящий `.env` и приватные SSH-ключи из `secrets/`. Для публикации достаточно файлов проекта, Compose-конфигурации, Dockerfile, Jenkinsfile и этого отчёта.
+## 6. Скриншоты выполнения
+
+### Запуск Docker Compose
+
+![Сборка образа агента и запуск Jenkins Controller и SSH-агента](screenshots/01-compose-startup.png)
+
+### Первоначальная настройка Jenkins и установка плагинов
+
+![Выбор рекомендуемых плагинов Jenkins](screenshots/02-jenkins-setup-plugins.png)
+
+![Установка плагинов, включая SSH Build Agents](screenshots/03-plugin-installation.png)
+
+### Подключённый агент
+
+![Узел ssh-agent1 онлайн](screenshots/04-agent-online.png)
+
+### Успешный запуск модульных тестов
+
+![PHPUnit: 5 тестов успешно, Pipeline завершён со статусом SUCCESS](screenshots/05-phpunit-success.png)
