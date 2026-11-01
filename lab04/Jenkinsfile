@@ -1,0 +1,24 @@
+pipeline {
+    agent { label 'php-agent' }
+    stages {
+        stage('Install Dependencies') {
+            steps {
+                dir('lab04') {
+                    sh 'composer install --no-interaction --prefer-dist'
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                dir('lab04') {
+                    sh 'composer test --no-interaction'
+                }
+            }
+        }
+    }
+    post {
+        always { echo 'Конвейер завершен.' }
+        success { echo 'Все этапы прошли успешно!' }
+        failure { echo 'Обнаружены ошибки в конвейере.' }
+    }
+}
