@@ -1,0 +1,45 @@
+---
+- name: Deploy PHP project to the test server
+  hosts: test_servers
+  become: true
+
+  vars:
+    app_dir: /var/www/php-app
+
+  tasks:
+    - name: Ensure application directory exists
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy project directories
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../{{ item }}/"
+        dest: "{{ app_dir }}/{{ item }}/"
+        owner: www-data
+        group: www-data
+        mode: '0755'
+      loop:
+        - src
+        - tests
+
+    - name: Copy project files
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../{{ item }}"
+        dest: "{{ app_dir }}/{{ item }}"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+      loop:
+        - index.php
+        - composer.json
+        - phpunit.xml
+
+    - name: Verify that the deployed entry point is readable
+      ansible.builtin.stat:
+        path: "{{ app_dir }}/index.php"
+      register: deployed_index
+      failed_when: not deployed_index.stat.exists

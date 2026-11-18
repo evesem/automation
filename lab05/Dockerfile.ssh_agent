@@ -1,0 +1,16 @@
+# Повторение IW04: агент для сборки и тестирования PHP-проекта.
+FROM jenkins/ssh-agent
+
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        unzip \
+        php-cli \
+        php-xml \
+        php-mbstring \
+        php-curl \
+        php-zip \
+        composer \
+    && rm -rf /var/lib/apt/lists/*

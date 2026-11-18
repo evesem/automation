@@ -2,3 +2,13 @@ __pycache__/
 *.pyc
 .env
 error.log
+
+# lab05: приватные SSH-ключи и локальный .env не коммитим
+lab05/.env
+lab05/secrets/*
+!lab05/secrets/.gitkeep
+!lab05/secrets/*.md
+!lab05/secrets/*.sh
+!lab05/secrets/*.ps1
+lab05/phpunit-report.xml
+lab05/vendor/

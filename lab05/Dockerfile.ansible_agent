@@ -1,0 +1,36 @@
+# Агент Jenkins, на котором устанавливается и запускается Ansible.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ansible \
+        ca-certificates \
+        curl \
+        git \
+        openssh-client \
+        openssh-server \
+        openjdk-17-jre-headless \
+        python3 \
+        sudo \
+    && rm -rf /var/lib/apt/lists/* \
+    && ssh-keygen -A \
+    && mkdir -p /var/run/sshd
+
+RUN useradd --create-home --uid 1000 --shell /bin/bash jenkins \
+    && mkdir -p /home/jenkins/.ssh /home/jenkins/agent \
+    && chown -R jenkins:jenkins /home/jenkins \
+    && chmod 700 /home/jenkins/.ssh \
+    && printf '%s\n' \
+        'PubkeyAuthentication yes' \
+        'PasswordAuthentication no' \
+        'PermitRootLogin no' \
+        > /etc/ssh/sshd_config.d/10-jenkins-agent.conf
+
+COPY ansible-agent-entrypoint.sh /usr/local/bin/ansible-agent-entrypoint.sh
+RUN chmod +x /usr/local/bin/ansible-agent-entrypoint.sh
+
+EXPOSE 22
+
+ENTRYPOINT ["/usr/local/bin/ansible-agent-entrypoint.sh"]

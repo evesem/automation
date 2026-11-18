@@ -1,0 +1,78 @@
+---
+- name: Configure Apache and PHP on the test server
+  hosts: test_servers
+  become: true
+  gather_facts: true
+
+  handlers:
+    - name: Restart Apache
+      ansible.builtin.sysvinit:
+        name: apache2
+        state: restarted
+
+  tasks:
+    - name: Install Apache, PHP and required extensions
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - libapache2-mod-php
+          - php-cli
+          - php-mbstring
+          - php-xml
+          - php-curl
+          - php-zip
+          - unzip
+          - git
+        state: present
+        update_cache: true
+
+    - name: Start and enable Apache
+      ansible.builtin.sysvinit:
+        name: apache2
+        state: started
+        enabled: true
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /var/www/php-app
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Install Apache virtual host for the PHP project
+      ansible.builtin.template:
+        src: templates/php-app.conf.j2
+        dest: /etc/apache2/sites-available/php-app.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Apache
+
+    - name: Enable Apache rewrite module
+      ansible.builtin.command: a2enmod rewrite
+      register: a2enmod_rewrite
+      changed_when: "'enabling module' in (a2enmod_rewrite.stdout | lower)"
+      notify: Restart Apache
+
+    - name: Enable php-app virtual host
+      ansible.builtin.command: a2ensite php-app.conf
+      register: a2ensite_result
+      changed_when: "'enabling site' in (a2ensite_result.stdout | lower)"
+      notify: Restart Apache
+
+    - name: Disable default virtual host
+      ansible.builtin.command: a2dissite 000-default.conf
+      register: a2dissite_result
+      changed_when: "'disabled' in (a2dissite_result.stdout | lower)"
+      notify: Restart Apache
+
+    - name: Add a temporary index page until the deploy pipeline runs
+      ansible.builtin.copy:
+        content: |
+          <?php echo "Apache + PHP are ready. Run php_deploy_pipeline to publish the project.\n";
+        dest: /var/www/php-app/index.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+        force: false

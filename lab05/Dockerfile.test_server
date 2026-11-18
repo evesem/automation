@@ -1,0 +1,34 @@
+# Тестовый сервер, который настраивается Ansible playbook.
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        apache2 \
+        ca-certificates \
+        openssh-server \
+        python3 \
+        sudo \
+    && rm -rf /var/lib/apt/lists/* \
+    && ssh-keygen -A \
+    && mkdir -p /var/run/sshd
+
+RUN useradd --create-home --shell /bin/bash ansible \
+    && echo 'ansible ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/ansible \
+    && chmod 0440 /etc/sudoers.d/ansible \
+    && mkdir -p /home/ansible/.ssh \
+    && chown -R ansible:ansible /home/ansible/.ssh \
+    && chmod 700 /home/ansible/.ssh \
+    && printf '%s\n' \
+        'PubkeyAuthentication yes' \
+        'PasswordAuthentication no' \
+        'PermitRootLogin no' \
+        > /etc/ssh/sshd_config.d/10-ansible.conf
+
+COPY test-server-entrypoint.sh /usr/local/bin/test-server-entrypoint.sh
+RUN chmod +x /usr/local/bin/test-server-entrypoint.sh
+
+EXPOSE 22 80
+
+ENTRYPOINT ["/usr/local/bin/test-server-entrypoint.sh"]

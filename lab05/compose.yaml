@@ -1,0 +1,79 @@
+name: iw05
+
+services:
+  # Controller Jenkins: UI на http://localhost:8080
+  jenkins-controller:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins-controller
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    networks:
+      - lab-network
+
+  # SSH-агент для сборки и тестирования PHP-проекта
+  ssh-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.ssh_agent
+    container_name: ssh-agent
+    restart: unless-stopped
+    environment:
+      JENKINS_AGENT_SSH_PUBKEY: ${JENKINS_AGENT_SSH_PUBKEY:?Set JENKINS_AGENT_SSH_PUBKEY in lab05/.env}
+    volumes:
+      - jenkins_agent_volume:/home/jenkins/agent
+    depends_on:
+      - jenkins-controller
+    networks:
+      - lab-network
+
+  # Агент с Ansible: запускает playbook против test-server
+  ansible-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.ansible_agent
+    container_name: ansible-agent
+    restart: unless-stopped
+    environment:
+      JENKINS_ANSIBLE_AGENT_SSH_PUBKEY: ${JENKINS_ANSIBLE_AGENT_SSH_PUBKEY:?Set JENKINS_ANSIBLE_AGENT_SSH_PUBKEY in lab05/.env}
+    volumes:
+      - ansible_agent_volume:/home/jenkins/agent
+    secrets:
+      - source: ansible_private_key
+        target: /run/secrets/ansible_private_key
+    depends_on:
+      - jenkins-controller
+      - test-server
+    networks:
+      - lab-network
+
+  # Целевой сервер: Ansible настраивает Apache + PHP и разворачивает приложение
+  test-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.test_server
+    container_name: test-server
+    restart: unless-stopped
+    environment:
+      ANSIBLE_PUBLIC_KEY: ${ANSIBLE_PUBLIC_KEY:?Set ANSIBLE_PUBLIC_KEY in lab05/.env}
+    ports:
+      - "2222:22"  # SSH
+      - "8081:80"  # Apache / PHP-приложение
+    networks:
+      - lab-network
+
+volumes:
+  jenkins_home:
+  jenkins_agent_volume:
+  ansible_agent_volume:
+
+secrets:
+  ansible_private_key:
+    file: ${ANSIBLE_PRIVATE_KEY_PATH:-./secrets/id_ed25519_ansible}
+
+networks:
+  lab-network:
+    driver: bridge

@@ -1,0 +1,14 @@
+<VirtualHost *:80>
+    ServerName php-app.local
+    ServerAlias localhost
+    DocumentRoot /var/www/php-app
+
+    <Directory /var/www/php-app>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/php-app-error.log
+    CustomLog ${APACHE_LOG_DIR}/php-app-access.log combined
+</VirtualHost>
