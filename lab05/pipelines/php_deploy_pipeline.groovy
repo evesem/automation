@@ -24,7 +24,7 @@ pipeline {
 
         stage('3. Verify deployed application') {
             steps {
-                sh 'curl -fsS http://test-server/ | grep -q "Calculator"'
+                sh 'curl -fsS http://test-server/ | grep -q "IW05"'
                 echo 'PHP application is available at http://localhost:8081/'
             }
         }

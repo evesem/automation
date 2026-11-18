@@ -146,8 +146,10 @@ host keys (допустимо только для лабораторного к�
 
 ## 8. Конвейеры Jenkins
 
-Все три задания создаются как **Pipeline → Pipeline script from SCM**:
-репозиторий `https://github.com/evesem/automation.git`, ветка `*/main`.
+Описания трёх заданий хранятся в каталоге `pipelines/`. В стенде они созданы как
+**Pipeline → Pipeline script** с содержимым этих файлов; эквивалентно можно использовать
+**Pipeline script from SCM** с репозиторием `https://github.com/evesem/automation.git`,
+ветка `main`, Script Path из таблицы ниже.
 
 | Задание | Script Path | Агент |
 | --- | --- | --- |
@@ -170,7 +172,7 @@ host keys (допустимо только для лабораторного к�
 
 Этапы: `Clone PHP repository` →
 `Copy project files to test server` (`ansible/deploy_php_project.yml`) →
-`Verify deployed application` (`curl http://test-server/` и поиск строки `Calculator`).
+`Verify deployed application` (`curl http://test-server/` и поиск строки `IW05`).
 
 ### 8.4. Проверка в браузере
 
