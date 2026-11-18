@@ -52,7 +52,7 @@ docker compose ps
 3. Открыть `http://localhost:8080` и получить стартовый пароль:
 
    ```bash
-   docker exec jenkins-controller cat /var/jenkins_home/secrets/initialAdminPassword
+   docker compose exec jenkins-controller cat /var/jenkins_home/secrets/initialAdminPassword
    ```
 
 4. Завершить мастер настройки: установить рекомендуемые плагины, создать администратора,
@@ -110,7 +110,7 @@ docker compose ps
 4. Проверка подключения с ansible-агента:
 
    ```bash
-   docker exec -u jenkins ansible-agent \
+   docker compose exec -u jenkins ansible-agent \
      ssh -i /home/jenkins/.ssh/id_ed25519 -o StrictHostKeyChecking=no ansible@test-server 'whoami'
    # ansible
    ```
@@ -121,8 +121,8 @@ docker compose ps
 
 `ansible/hosts.ini` описывает группу `test_servers` с хостом `test-server`, пользователем
 `ansible`, ключом `/home/jenkins/.ssh/id_ed25519` и интерпретатором Python.
-`ansible/ansible.cfg` задаёт те же параметры по умолчанию и отключает проверку host keys
-(допустимо только для лабораторного контура).
+`ansible.cfg` в каталоге `lab05` задаёт те же параметры по умолчанию и отключает проверку
+host keys (допустимо только для лабораторного контура).
 
 ### `ansible/setup_test_server.yml`
 

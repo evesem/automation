@@ -4,7 +4,6 @@ services:
   # Controller Jenkins: UI на http://localhost:8080
   jenkins-controller:
     image: jenkins/jenkins:lts-jdk17
-    container_name: jenkins-controller
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -19,7 +18,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ssh_agent
-    container_name: ssh-agent
     restart: unless-stopped
     environment:
       JENKINS_AGENT_SSH_PUBKEY: ${JENKINS_AGENT_SSH_PUBKEY:?Set JENKINS_AGENT_SSH_PUBKEY in lab05/.env}
@@ -35,7 +33,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ansible_agent
-    container_name: ansible-agent
     restart: unless-stopped
     environment:
       JENKINS_ANSIBLE_AGENT_SSH_PUBKEY: ${JENKINS_ANSIBLE_AGENT_SSH_PUBKEY:?Set JENKINS_ANSIBLE_AGENT_SSH_PUBKEY in lab05/.env}
@@ -55,7 +52,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test_server
-    container_name: test-server
     restart: unless-stopped
     environment:
       ANSIBLE_PUBLIC_KEY: ${ANSIBLE_PUBLIC_KEY:?Set ANSIBLE_PUBLIC_KEY in lab05/.env}
