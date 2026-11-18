@@ -180,18 +180,49 @@ host keys (допустимо только для лабораторного к�
 с заголовком «IW05: PHP-проект развёрнут через Ansible», версией PHP и формой калькулятора.
 Например, ссылка `/?a=3&b=4&op=add` должна вывести `Результат: 7`.
 
-## 9. Проверка конфигурации
+## 9. Проверка конфигурации и скриншоты
 
 Команда `docker compose -f lab05/compose.yaml config --quiet` завершается без ошибок:
 YAML корректен, все обязательные переменные окружения определены в `lab05/.env`.
-Полный прогон контейнеров на машине выполнения был ограничен нехваткой свободного места
-на диске `C:` (менее 3 МБ), поэтому скриншоты работающих конвейеров добавляются после
-запуска на машине с доступным местом. Порядок получения скриншотов:
+После освобождения места на диске все четыре сервиса были подняты и проверены:
 
-1. `docker compose ps` — все четыре сервиса в статусе `Up`.
-2. Jenkins → узлы `ssh-agent1` и `ansible-agent1` в статусе **Online**.
-3. Успешные сборки трёх pipeline.
-4. `http://localhost:8081/` с работающей формой калькулятора.
+| Сервис | Статус |
+| --- | --- |
+| `jenkins-controller` | Up |
+| `ssh-agent` | Up |
+| `ansible-agent` | Up |
+| `test-server` | Up |
+
+Узлы Jenkins `ssh-agent1` и `ansible-agent1` находятся в статусе **Online**, все три
+конвейера завершились успешно:
+
+- `php-build-and-test #1` — **SUCCESS** (5 тестов, 5 assertion);
+- `ansible-setup #1` — **SUCCESS** (10 задач, 2 изменения);
+- `php-deploy #2` — **SUCCESS** (приложение доступно, проверка `IW05` пройдена).
+
+### 9.1. Панель Jenkins с тремя заданиями
+
+![Jenkins dashboard](screenshots/01-jenkins-dashboard.png)
+
+### 9.2. Агенты Jenkins
+
+![Jenkins nodes](screenshots/02-jenkins-nodes.png)
+
+### 9.3. Сборка и тестирование PHP
+
+![php-build-and-test](screenshots/03-php-build-and-test.png)
+
+### 9.4. Настройка сервера через Ansible
+
+![ansible-setup](screenshots/04-ansible-setup.png)
+
+### 9.5. Развёртывание PHP-проекта
+
+![php-deploy](screenshots/05-php-deploy.png)
+
+### 9.6. Развёрнутое приложение
+
+![Deployed PHP application](screenshots/06-deployed-app.png)
 
 ## 10. Ответы на вопросы
 
